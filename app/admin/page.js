@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const SB_URL = "https://wakwbmuanzglmawqzopi.supabase.co"
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indha3dibXVhbnpnbG1hd3F6b3BpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMDc5MjYsImV4cCI6MjA4NTY4MzkyNn0.oVcKaJY9-RNu4QSk32fi3h8Lb-mBm4FXFuEfwKFmLZo"
-const PASSWORD_ADMIN = "130903"
+const PASSWORD_ADMIN = "130903" 
 const supabase = createClient(SB_URL, SB_KEY)
 
 export default function Admin() {
@@ -31,15 +31,17 @@ export default function Admin() {
     e.preventDefault();
     const judul = e.target.judul.value;
     const link = e.target.link.value;
-    
-    let finalUrl = link.includes("watch?v=") ? link.replace("watch?v=", "embed/") : link;
+    const poster = e.target.poster.value || "https://via.placeholder.com/300x450?text=No+Poster";
 
-    const { error } = await supabase.from('videos').insert([{ title: judul, url: finalUrl }]);
+    const { error } = await supabase.from('videos').insert([
+      { title: judul, url: link, thumbnail: poster }
+    ]);
 
     if (error) {
-      alert("Gagal Simpan: " + error.message);
+      alert("Gagal: " + error.message);
+      console.error(error);
     } else {
-      alert("MANTAP! Berhasil tersimpan.");
+      alert("BERHASIL DISIMPAN!");
       e.target.reset();
       fetchVideos();
     }
@@ -56,18 +58,21 @@ export default function Admin() {
 
   return (
     <div style={{ padding: '40px', background: '#000', color: '#fff', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      <h1>🛠 Admin Panel (Original)</h1>
+      <h1>🛠 Admin Panel (Dood/Videy Support)</h1>
       <form onSubmit={handleUpload} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '40px', background: '#111', padding: '20px', borderRadius: '10px' }}>
-        <input name="judul" placeholder="Judul Film" style={{ padding: '12px' }} required />
-        <input name="link" placeholder="Link Video (YouTube)" style={{ padding: '12px' }} required />
-        <button type="submit" style={{ padding: '15px', background: '#E50914', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>UPLOAD</button>
+        <input name="judul" placeholder="Judul Film" style={{ padding: '12px', color: '#000' }} required />
+        <input name="link" placeholder="Link Embed (Doodstream/Videy)" style={{ padding: '12px', color: '#000' }} required />
+        <input name="poster" placeholder="Link Gambar Poster (Cari di Google, klik kanan, copy image address)" style={{ padding: '12px', color: '#000' }} />
+        <button type="submit" style={{ padding: '15px', background: '#E50914', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>UPLOAD</button>
       </form>
 
-      <div>
-        <h3>Daftar Koleksi:</h3>
+      <div style={{ marginTop: '20px' }}>
         {videos.map((vid) => (
-          <div key={vid.id} style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '10px', borderRadius: '8px', marginBottom: '10px' }}>
-            <span>{vid.title}</span>
+          <div key={vid.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #333' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img src={vid.thumbnail} style={{ width: '40px', height: '60px', objectFit: 'cover' }} />
+              <span>{vid.title}</span>
+            </div>
             <button onClick={() => handleHapus(vid.id)} style={{ background: '#ff4444', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '5px' }}>Hapus</button>
           </div>
         ))}

@@ -10,6 +10,9 @@ const supabase = createClient(SB_URL, SB_KEY)
 export default function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [videos, setVideos] = useState([])
+  const [judul, setJudul] = useState('')
+  const [linkVideo, setLinkVideo] = useState('')
+  const [linkPoster, setLinkPoster] = useState('')
 
   useEffect(() => {
     const pass = prompt("Masukkan Password Admin:")
@@ -27,22 +30,43 @@ export default function Admin() {
     if (data) setVideos(data)
   }
 
+  // JURUS OTOMATIS: Disesuaikan dengan pola thumbcdn.com kamu
+  const prosesLink = () => {
+    if (!linkVideo.includes("dood")) {
+      alert("Masukkan link Doodstream dulu bos!");
+      return;
+    }
+    
+    // Ambil ID dari link. Kita split berdasarkan '/' dan ambil bagian terakhirnya
+    // Contoh: https://doodstream.com/d/km8i6jmoju9q8r7u -> ID-nya: km8i6jmoju9q8r7u
+    const cleanedLink = linkVideo.trim();
+    const bagian = cleanedLink.split('/');
+    const idVideo = bagian[bagian.length - 1];
+
+    if (idVideo) {
+      // Ubah link jadi format Embed (/e/)
+      setLinkVideo(`https://doodstream.com/e/${idVideo}`); 
+      // Rakit link thumbnail sesuai pola yang kamu kasih
+      setLinkPoster(`https://thumbcdn.com/snaps/${idVideo}.jpg`); 
+      alert("Link & Thumbnail Doodstream berhasil dirakit!");
+    } else {
+      alert("ID Video tidak ditemukan!");
+    }
+  }
+
   const handleUpload = async (e) => {
     e.preventDefault();
-    const judul = e.target.judul.value;
-    const link = e.target.link.value;
-    const poster = e.target.poster.value || "https://via.placeholder.com/300x450?text=No+Poster";
+    if (!judul || !linkVideo || !linkPoster) return alert("Isi semua data dulu!");
 
     const { error } = await supabase.from('videos').insert([
-      { title: judul, url: link, thumbnail: poster }
+      { title: judul, url: linkVideo, thumbnail: linkPoster }
     ]);
 
     if (error) {
       alert("Gagal: " + error.message);
-      console.error(error);
     } else {
-      alert("BERHASIL DISIMPAN!");
-      e.target.reset();
+      alert("MANTAP! Tersimpan ke Database.");
+      setJudul(''); setLinkVideo(''); setLinkPoster('');
       fetchVideos();
     }
   };
@@ -58,22 +82,48 @@ export default function Admin() {
 
   return (
     <div style={{ padding: '40px', background: '#000', color: '#fff', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      <h1>🛠 Admin Panel (Dood/Videy Support)</h1>
-      <form onSubmit={handleUpload} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '40px', background: '#111', padding: '20px', borderRadius: '10px' }}>
-        <input name="judul" placeholder="Judul Film" style={{ padding: '12px', color: '#000' }} required />
-        <input name="link" placeholder="Link Embed (Doodstream/Videy)" style={{ padding: '12px', color: '#000' }} required />
-        <input name="poster" placeholder="Link Gambar Poster (Cari di Google, klik kanan, copy image address)" style={{ padding: '12px', color: '#000' }} />
-        <button type="submit" style={{ padding: '15px', background: '#E50914', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>UPLOAD</button>
-      </form>
+      <h1>🛠 Admin Panel (Dood Auto-Thumb)</h1>
+      
+      <div style={{ background: '#111', padding: '20px', borderRadius: '10px', marginBottom: '30px', border: '1px solid #E50914' }}>
+        <label>Judul Video:</label>
+        <input 
+          placeholder="Contoh: Film Action Terbaru" 
+          value={judul} 
+          onChange={(e) => setJudul(e.target.value)}
+          style={{ padding: '12px', width: '100%', marginBottom: '15px', borderRadius: '5px', border: 'none' }} 
+        />
+        
+        <label>Link Doodstream:</label>
+        <div style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
+          <input 
+            placeholder="https://doodstream.com/d/..." 
+            value={linkVideo}
+            onChange={(e) => setLinkVideo(e.target.value)}
+            style={{ padding: '12px', flex: 1, borderRadius: '5px', border: 'none' }} 
+          />
+          <button onClick={prosesLink} style={{ padding: '10px 20px', background: '#333', color: '#fff', border: '1px solid #E50914', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>PROSES</button>
+        </div>
 
-      <div style={{ marginTop: '20px' }}>
+        <label>Link Thumbnail (Auto):</label>
+        <input 
+          placeholder="Hasil proses akan muncul di sini..." 
+          value={linkPoster}
+          onChange={(e) => setLinkPoster(e.target.value)}
+          style={{ padding: '12px', width: '100%', marginBottom: '20px', borderRadius: '5px', border: 'none', background: '#222', color: '#aaa' }} 
+        />
+
+        <button onClick={handleUpload} style={{ padding: '15px', background: '#E50914', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', width: '100%', cursor: 'pointer', fontSize: '1rem' }}>SIMPAN KOLEKSI</button>
+      </div>
+
+      <div>
+        <h3>Daftar Video di Database:</h3>
         {videos.map((vid) => (
           <div key={vid.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #333' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img src={vid.thumbnail} style={{ width: '40px', height: '60px', objectFit: 'cover' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <img src={vid.thumbnail} style={{ width: '50px', height: '35px', objectFit: 'cover', borderRadius: '4px' }} alt="" />
               <span>{vid.title}</span>
             </div>
-            <button onClick={() => handleHapus(vid.id)} style={{ background: '#ff4444', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '5px' }}>Hapus</button>
+            <button onClick={() => handleHapus(vid.id)} style={{ background: '#ff4444', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer' }}>Hapus</button>
           </div>
         ))}
       </div>

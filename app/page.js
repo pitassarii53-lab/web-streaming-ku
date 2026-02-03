@@ -9,57 +9,86 @@ const supabase = createClient(SB_URL, SB_KEY)
 
 export default function Home() {
   const [videos, setVideos] = useState([])
+  const [filteredVideos, setFilteredVideos] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const ambilData = async () => {
       const { data } = await supabase.from('videos').select('*').order('id', { ascending: false })
-      if (data) setVideos(data)
+      if (data) {
+        setVideos(data)
+        setFilteredVideos(data)
+      }
       setLoading(false)
     }
     ambilData()
   }, [])
 
+  // Fungsi Filter Pencarian
+  useEffect(() => {
+    const hasilCari = videos.filter(video =>
+      video.title.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    setFilteredVideos(hasilCari)
+  }, [searchTerm, videos])
+
   return (
-    <div style={{ backgroundColor: '#141414', color: '#fff', minHeight: '100vh', fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+    <div style={{ backgroundColor: '#141414', color: '#fff', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
       
-      {/* Navbar Minimalis */}
-      <nav style={{ padding: '20px 4%', display: 'flex', alignItems: 'center', background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%)', position: 'fixed', width: '100%', zIndex: 10 }}>
-        <h1 style={{ color: '#E50914', fontSize: '1.8rem', fontWeight: 'bold', margin: 0, letterSpacing: '1px' }}>STREAMINGKU</h1>
+      {/* Navbar dengan Search Bar */}
+      <nav style={{ 
+        padding: '15px 4%', 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        background: '#000', 
+        position: 'fixed', 
+        top: 0, 
+        width: '100%', 
+        zIndex: 100 
+      }}>
+        <h1 style={{ color: '#E50914', fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>STREAMINGKU</h1>
+        
+        <div style={{ position: 'relative' }}>
+          <input 
+            type="text"
+            placeholder="Cari judul video..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ 
+              background: 'rgba(0,0,0,0.75)', 
+              color: 'white', 
+              border: '1px solid #fff', 
+              padding: '8px 15px', 
+              borderRadius: '4px',
+              width: '250px',
+              fontSize: '0.9rem'
+            }}
+          />
+        </div>
       </nav>
 
-      {/* Hero Section Sederhana */}
-      <div style={{ height: '40vh', display: 'flex', alignItems: 'center', padding: '0 4%', background: 'linear-gradient(to right, #141414, rgba(20,20,20,0))' }}>
-        <div>
-          <h2 style={{ fontSize: '3rem', marginBottom: '10px' }}>Koleksi Video Terbaru</h2>
-          <p style={{ fontSize: '1.2rem', color: '#aaa' }}>Tonton koleksi video pilihan langsung dari database pribadi kamu.</p>
-        </div>
-      </div>
-
-      {/* Grid Video */}
-      <div style={{ padding: '0 4% 50px 4%' }}>
-        <h3 style={{ fontSize: '1.5rem', marginBottom: '20px', color: '#e5e5e5' }}>Rekomendasi Untukmu</h3>
+      {/* Spasi agar konten tidak tertutup Navbar */}
+      <div style={{ paddingTop: '80px', paddingLeft: '4%', paddingRight: '4%' }}>
+        
+        <h2 style={{ fontSize: '1.8rem', margin: '20px 0' }}>
+          {searchTerm ? `Hasil pencarian: "${searchTerm}"` : "Koleksi Terbaru"}
+        </h2>
         
         {loading ? (
-          <p>Memuat video...</p>
-        ) : videos.length === 0 ? (
-          <p style={{color: '#666'}}>Belum ada koleksi video.</p>
+          <p>Memuat database...</p>
+        ) : filteredVideos.length === 0 ? (
+          <p style={{ color: '#888' }}>Video tidak ditemukan. Coba kata kunci lain.</p>
         ) : (
           <div style={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-            gap: '20px' 
+            gap: '25px',
+            paddingBottom: '50px'
           }}>
-            {videos.map((vid) => (
-              <div key={vid.id} className="video-card" style={{ 
-                background: '#181818', 
-                borderRadius: '4px', 
-                overflow: 'hidden',
-                transition: 'transform 0.3s ease',
-                cursor: 'pointer',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
-              }}>
-                {/* Container Iframe */}
+            {filteredVideos.map((vid) => (
+              <div key={vid.id} className="card" style={{ background: '#181818', borderRadius: '8px', overflow: 'hidden' }}>
                 <div style={{ position: 'relative', paddingTop: '56.25%' }}>
                   <iframe 
                     src={vid.url} 
@@ -67,14 +96,8 @@ export default function Home() {
                     allowFullScreen
                   ></iframe>
                 </div>
-                
-                {/* Info Video */}
                 <div style={{ padding: '15px' }}>
-                  <h4 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>{vid.title}</h4>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#46d369', fontWeight: 'bold' }}>98% Match</span>
-                    <span style={{ fontSize: '0.8rem', color: '#aaa', border: '1px solid #aaa', padding: '0 5px' }}>HD</span>
-                  </div>
+                  <h4 style={{ margin: 0, fontSize: '1rem' }}>{vid.title}</h4>
                 </div>
               </div>
             ))}
@@ -82,12 +105,9 @@ export default function Home() {
         )}
       </div>
 
-      {/* CSS untuk efek hover sederhana */}
       <style jsx>{`
-        .video-card:hover {
-          transform: scale(1.05);
-          z-index: 2;
-        }
+        .card { transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); border: 1px solid #E50914; }
       `}</style>
     </div>
   )

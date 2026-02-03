@@ -30,25 +30,23 @@ export default function Admin() {
     if (data) setVideos(data)
   }
 
-  // JURUS OTOMATIS: Disesuaikan dengan pola thumbcdn.com kamu
+  // JURUS OTOMATIS: Mendukung Doodstream & MyVidPlay
   const prosesLink = () => {
-    if (!linkVideo.includes("dood")) {
-      alert("Masukkan link Doodstream dulu bos!");
-      return;
-    }
-    
-    // Ambil ID dari link. Kita split berdasarkan '/' dan ambil bagian terakhirnya
-    // Contoh: https://doodstream.com/d/km8i6jmoju9q8r7u -> ID-nya: km8i6jmoju9q8r7u
-    const cleanedLink = linkVideo.trim();
-    const bagian = cleanedLink.split('/');
+    const inputLink = linkVideo.trim();
+    if (!inputLink) return alert("Masukkan link dulu!");
+
+    // Mengambil ID video (bagian terakhir dari link)
+    const bagian = inputLink.split('/');
     const idVideo = bagian[bagian.length - 1];
 
     if (idVideo) {
-      // Ubah link jadi format Embed (/e/)
-      setLinkVideo(`https://doodstream.com/e/${idVideo}`); 
-      // Rakit link thumbnail sesuai pola yang kamu kasih
+      // 1. Set Link Video jadi format Embed MyVidPlay
+      setLinkVideo(`https://myvidplay.com/e/${idVideo}`); 
+      
+      // 2. Set Link Thumbnail otomatis ke pola thumbcdn
       setLinkPoster(`https://thumbcdn.com/snaps/${idVideo}.jpg`); 
-      alert("Link & Thumbnail Doodstream berhasil dirakit!");
+      
+      alert("Link MyVidPlay & Thumbnail berhasil diproses!");
     } else {
       alert("ID Video tidak ditemukan!");
     }
@@ -56,7 +54,7 @@ export default function Admin() {
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!judul || !linkVideo || !linkPoster) return alert("Isi semua data dulu!");
+    if (!judul || !linkVideo) return alert("Isi judul dan link dulu!");
 
     const { error } = await supabase.from('videos').insert([
       { title: judul, url: linkVideo, thumbnail: linkPoster }
@@ -65,7 +63,7 @@ export default function Admin() {
     if (error) {
       alert("Gagal: " + error.message);
     } else {
-      alert("MANTAP! Tersimpan ke Database.");
+      alert("MANTAP! Tersimpan.");
       setJudul(''); setLinkVideo(''); setLinkPoster('');
       fetchVideos();
     }
@@ -82,48 +80,54 @@ export default function Admin() {
 
   return (
     <div style={{ padding: '40px', background: '#000', color: '#fff', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      <h1>🛠 Admin Panel (Dood Auto-Thumb)</h1>
+      <h1 style={{ color: '#E50914' }}>🛠 MyVidPlay Admin</h1>
       
-      <div style={{ background: '#111', padding: '20px', borderRadius: '10px', marginBottom: '30px', border: '1px solid #E50914' }}>
-        <label>Judul Video:</label>
-        <input 
-          placeholder="Contoh: Film Action Terbaru" 
-          value={judul} 
-          onChange={(e) => setJudul(e.target.value)}
-          style={{ padding: '12px', width: '100%', marginBottom: '15px', borderRadius: '5px', border: 'none' }} 
-        />
-        
-        <label>Link Doodstream:</label>
-        <div style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
+      <div style={{ background: '#111', padding: '20px', borderRadius: '10px', marginBottom: '30px', border: '1px solid #333' }}>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px' }}>Judul Video:</label>
           <input 
-            placeholder="https://doodstream.com/d/..." 
-            value={linkVideo}
-            onChange={(e) => setLinkVideo(e.target.value)}
-            style={{ padding: '12px', flex: 1, borderRadius: '5px', border: 'none' }} 
+            placeholder="Masukkan judul..." 
+            value={judul} 
+            onChange={(e) => setJudul(e.target.value)}
+            style={{ padding: '12px', width: '100%', borderRadius: '5px', border: 'none', color: '#000' }} 
           />
-          <button onClick={prosesLink} style={{ padding: '10px 20px', background: '#333', color: '#fff', border: '1px solid #E50914', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>PROSES</button>
+        </div>
+        
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px' }}>Link Video (MyVidPlay/Dood):</label>
+          <div style={{ display: 'flex', gap: '5px' }}>
+            <input 
+              placeholder="https://myvidplay.com/e/..." 
+              value={linkVideo}
+              onChange={(e) => setLinkVideo(e.target.value)}
+              style={{ padding: '12px', flex: 1, borderRadius: '5px', border: 'none', color: '#000' }} 
+            />
+            <button onClick={prosesLink} style={{ padding: '10px 20px', background: '#E50914', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>PROSES</button>
+          </div>
         </div>
 
-        <label>Link Thumbnail (Auto):</label>
-        <input 
-          placeholder="Hasil proses akan muncul di sini..." 
-          value={linkPoster}
-          onChange={(e) => setLinkPoster(e.target.value)}
-          style={{ padding: '12px', width: '100%', marginBottom: '20px', borderRadius: '5px', border: 'none', background: '#222', color: '#aaa' }} 
-        />
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '5px' }}>Link Thumbnail (Bisa Paste link Twitter di sini):</label>
+          <input 
+            placeholder="Link otomatis dari PROSES atau paste link Twitter..." 
+            value={linkPoster}
+            onChange={(e) => setLinkPoster(e.target.value)}
+            style={{ padding: '12px', width: '100%', borderRadius: '5px', border: 'none', color: '#000' }} 
+          />
+        </div>
 
-        <button onClick={handleUpload} style={{ padding: '15px', background: '#E50914', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', width: '100%', cursor: 'pointer', fontSize: '1rem' }}>SIMPAN KOLEKSI</button>
+        <button onClick={handleUpload} style={{ padding: '15px', background: '#0070f3', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', width: '100%', cursor: 'pointer' }}>SIMPAN VIDEO</button>
       </div>
 
-      <div>
-        <h3>Daftar Video di Database:</h3>
+      <div style={{ display: 'grid', gap: '10px' }}>
+        <h3>Koleksi Database:</h3>
         {videos.map((vid) => (
-          <div key={vid.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #333' }}>
+          <div key={vid.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111', padding: '15px', borderRadius: '8px', border: '1px solid #222' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <img src={vid.thumbnail} style={{ width: '50px', height: '35px', objectFit: 'cover', borderRadius: '4px' }} alt="" />
+              <img src={vid.thumbnail} style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} alt="" />
               <span>{vid.title}</span>
             </div>
-            <button onClick={() => handleHapus(vid.id)} style={{ background: '#ff4444', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '5px', cursor: 'pointer' }}>Hapus</button>
+            <button onClick={() => handleHapus(vid.id)} style={{ background: '#ff4444', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '5px', cursor: 'pointer' }}>Hapus</button>
           </div>
         ))}
       </div>

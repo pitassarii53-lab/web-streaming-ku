@@ -15,7 +15,7 @@ export default function Admin() {
 
     // KIRIM KE SUPABASE
     const { error } = await supabase
-      .from('videos')
+      .from('public.videos')
       .insert([{ title: judul, url: embedLink }])
 
     if (error) {

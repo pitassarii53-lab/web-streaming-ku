@@ -18,16 +18,27 @@ export default function AdminPage() {
   const [manualUrl, setManualUrl] = useState('')
   const [manualThumb, setManualThumb] = useState('')
 
-  // State Untuk Edit
+  // State Pengumuman
+  const [announcement, setAnnouncement] = useState('')
+
+  // State Edit Video
   const [editData, setEditData] = useState(null)
 
   useEffect(() => {
-    if (isLogin) fetchVideos()
+    if (isLogin) {
+      fetchVideos()
+      fetchSettings()
+    }
   }, [isLogin])
 
   const fetchVideos = async () => {
     const { data } = await supabase.from('videos').select('*').order('id', { ascending: false })
     setVideos(data || [])
+  }
+
+  const fetchSettings = async () => {
+    const { data } = await supabase.from('settings').select('announcement').eq('id', 1).single()
+    if (data) setAnnouncement(data.announcement)
   }
 
   const handleLogin = () => {
@@ -36,7 +47,7 @@ export default function AdminPage() {
   }
 
   const syncDood = async () => {
-    if (!apiDood) return alert('Isi API Key Doodstream dulu!')
+    if (!apiDood) return alert('Isi API Key dulu!')
     setLoading(true)
     try {
       const res = await fetch(`https://doodapi.com/api/file/list?key=${apiDood}`)
@@ -48,8 +59,7 @@ export default function AdminPage() {
           thumbnail: `https://thumbcdn.com/snaps/${f.file_code}.jpg`
         }))
         await supabase.from('videos').insert(toInsert)
-        alert('Sync Berhasil!')
-        fetchVideos()
+        alert('Sync Berhasil!'); fetchVideos()
       }
     } catch (e) { alert('Gagal Sync!') }
     setLoading(false)
@@ -57,40 +67,31 @@ export default function AdminPage() {
 
   const handleManualUpload = async (e) => {
     e.preventDefault()
-    const { error } = await supabase.from('videos').insert([{
-      title: manualTitle, url: manualUrl, thumbnail: manualThumb
-    }])
-    if (!error) {
-      alert('Video Berhasil Ditambah!'); setManualTitle(''); setManualUrl(''); setManualThumb(''); fetchVideos()
-    }
+    const { error } = await supabase.from('videos').insert([{ title: manualTitle, url: manualUrl, thumbnail: manualThumb }])
+    if (!error) { alert('Berhasil!'); setManualTitle(''); setManualUrl(''); setManualThumb(''); fetchVideos() }
+  }
+
+  const handleUpdateAnnouncement = async () => {
+    const { error } = await supabase.from('settings').update({ announcement }).eq('id', 1)
+    if (!error) alert('Pengumuman Berhasil Diperbarui!')
   }
 
   const deleteVideo = async (id) => {
-    if (confirm('Yakin mau hapus video ini?')) {
+    if (confirm('Hapus video ini?')) {
       await supabase.from('videos').delete().eq('id', id)
       fetchVideos()
     }
   }
 
-  // Fungsi Simpan Perubahan Edit
-  const handleUpdate = async () => {
-    const { error } = await supabase.from('videos').update({
-      title: editData.title,
-      thumbnail: editData.thumbnail,
-      url: editData.url
-    }).eq('id', editData.id)
-
-    if (!error) {
-      alert('Data Berhasil Diperbarui!')
-      setEditData(null)
-      fetchVideos()
-    }
+  const handleUpdateVideo = async () => {
+    await supabase.from('videos').update({ title: editData.title, thumbnail: editData.thumbnail, url: editData.url }).eq('id', editData.id)
+    setEditData(null); fetchVideos()
   }
 
   if (!isLogin) return (
     <div style={{ background: '#000', height: '100vh', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <div style={{ background: '#111', padding: '30px', borderRadius: '10px', textAlign: 'center' }}>
-        <h3>ADMIN LOGIN</h3>
+        <h3 style={{ color: '#E50914' }}>ADMIN LOGIN</h3>
         <input type="password" onChange={(e) => setPass(e.target.value)} style={{ padding: '10px', borderRadius: '5px', border: 'none', marginBottom: '10px', width: '100%' }} />
         <button onClick={handleLogin} style={{ width: '100%', padding: '10px', background: '#E50914', color: '#fff', border: 'none', borderRadius: '5px' }}>MASUK</button>
       </div>
@@ -99,60 +100,62 @@ export default function AdminPage() {
 
   return (
     <div style={{ padding: '20px', background: '#000', minHeight: '100vh', color: '#fff', fontFamily: 'sans-serif' }}>
-      <h2 style={{ color: '#E50914', textAlign: 'center' }}>DASHBOARD ADMIN</h2>
+      <h2 style={{ color: '#E50914', textAlign: 'center' }}>ADMIN PANEL</h2>
       
+      {/* 1. KOTAK PENGUMUMAN */}
+      <div style={{ background: '#111', padding: '20px', borderRadius: '10px', marginBottom: '20px', border: '1px solid #E50914' }}>
+        <h4 style={{ marginTop: 0 }}>GANTI PENGUMUMAN BERJALAN</h4>
+        <input value={announcement} onChange={(e) => setAnnouncement(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '5px', background: '#000', color: '#fff', border: '1px solid #333', marginBottom: '10px', boxSizing: 'border-box' }} />
+        <button onClick={handleUpdateAnnouncement} style={{ width: '100%', padding: '10px', background: '#0088cc', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>SIMPAN PENGUMUMAN</button>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+        {/* 2. SYNC DOOD */}
         <div style={{ background: '#111', padding: '20px', borderRadius: '10px' }}>
           <h4>SYNC DOODSTREAM</h4>
           <input value={apiDood} onChange={(e) => setApiDood(e.target.value)} placeholder="API Key" style={{ padding: '10px', width: '100%', borderRadius: '5px', border: '1px solid #333', background: '#000', color: '#fff', marginBottom: '10px', boxSizing: 'border-box' }} />
-          <button onClick={syncDood} disabled={loading} style={{ width: '100%', padding: '10px', background: '#25D366', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>{loading ? 'MEMPROSES...' : 'SYNC SEKARANG'}</button>
+          <button onClick={syncDood} disabled={loading} style={{ width: '100%', padding: '10px', background: '#25D366', color: '#fff', border: 'none', borderRadius: '5px' }}>{loading ? 'SINKRONISASI...' : 'SYNC SEKARANG'}</button>
         </div>
 
+        {/* 3. UPLOAD MANUAl */}
         <div style={{ background: '#111', padding: '20px', borderRadius: '10px' }}>
-          <h4>UPLOAD MANUAl</h4>
+          <h4>UPLOAD MANUAL</h4>
           <form onSubmit={handleManualUpload}>
             <input placeholder="Judul" value={manualTitle} onChange={(e)=>setManualTitle(e.target.value)} required style={{ padding: '8px', width: '100%', borderRadius: '5px', border: '1px solid #333', background: '#000', color: '#fff', marginBottom: '8px', boxSizing: 'border-box' }} />
             <input placeholder="URL Video" value={manualUrl} onChange={(e)=>setManualUrl(e.target.value)} required style={{ padding: '8px', width: '100%', borderRadius: '5px', border: '1px solid #333', background: '#000', color: '#fff', marginBottom: '8px', boxSizing: 'border-box' }} />
             <input placeholder="URL Thumbnail" value={manualThumb} onChange={(e)=>setManualThumb(e.target.value)} required style={{ padding: '8px', width: '100%', borderRadius: '5px', border: '1px solid #333', background: '#000', color: '#fff', marginBottom: '8px', boxSizing: 'border-box' }} />
-            <button type="submit" style={{ width: '100%', padding: '10px', background: '#E50914', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>TAMBAHKAN</button>
+            <button type="submit" style={{ width: '100%', padding: '10px', background: '#E50914', color: '#fff', border: 'none', borderRadius: '5px' }}>TAMBAHKAN VIDEO</button>
           </form>
         </div>
       </div>
 
-      {/* DAFTAR VIDEO */}
-      <div style={{ display: 'grid', gap: '8px' }}>
+      {/* 4. DAFTAR VIDEO */}
+      <p>Total: {videos.length} Video</p>
+      <div style={{ display: 'grid', gap: '10px' }}>
         {videos.map((v) => (
-          <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111', padding: '10px 15px', borderRadius: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <img src={v.thumbnail} style={{ width: '50px', height: '30px', objectFit: 'cover', borderRadius: '4px' }} />
-                <span style={{ fontSize: '0.85rem' }}>{v.title}</span>
+          <div key={v.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111', padding: '10px', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img src={v.thumbnail} style={{ width: '50px', height: '30px', objectFit: 'cover' }} />
+                <span style={{ fontSize: '0.8rem' }}>{v.title}</span>
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => setEditData(v)} style={{ background: '#0088cc', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
-              <button onClick={() => deleteVideo(v.id)} style={{ background: '#333', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer' }}>Hapus</button>
+            <div style={{ display: 'flex', gap: '5px' }}>
+              <button onClick={() => setEditData(v)} style={{ background: '#0088cc', border: 'none', color: '#fff', padding: '5px 10px', borderRadius: '4px' }}>Edit</button>
+              <button onClick={() => deleteVideo(v.id)} style={{ background: '#444', border: 'none', color: '#fff', padding: '5px 10px', borderRadius: '4px' }}>Hapus</button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* POPUP MODAL EDIT (Muncul saat tombol edit diklik) */}
+      {/* MODAL EDIT */}
       {editData && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ background: '#111', padding: '20px', borderRadius: '10px', width: '100%', maxWidth: '400px', border: '1px solid #333' }}>
-            <h4 style={{ marginTop: 0 }}>EDIT VIDEO</h4>
-            <label style={{ fontSize: '0.8rem', color: '#888' }}>Judul Video:</label>
-            <input value={editData.title} onChange={(e) => setEditData({...editData, title: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #333', background: '#000', color: '#fff', boxSizing: 'border-box' }} />
-            
-            <label style={{ fontSize: '0.8rem', color: '#888' }}>URL Thumbnail:</label>
-            <input value={editData.thumbnail} onChange={(e) => setEditData({...editData, thumbnail: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #333', background: '#000', color: '#fff', boxSizing: 'border-box' }} />
-            
-            <label style={{ fontSize: '0.8rem', color: '#888' }}>URL Video/Embed:</label>
-            <input value={editData.url} onChange={(e) => setEditData({...editData, url: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '20px', borderRadius: '5px', border: '1px solid #333', background: '#000', color: '#fff', boxSizing: 'border-box' }} />
-            
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={handleUpdate} style={{ flex: 1, padding: '10px', background: '#25D366', color: '#fff', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>SIMPAN</button>
-              <button onClick={() => setEditData(null)} style={{ flex: 1, padding: '10px', background: '#444', color: '#fff', border: 'none', borderRadius: '5px' }}>BATAL</button>
-            </div>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ background: '#111', padding: '20px', borderRadius: '10px', width: '100%', maxWidth: '400px' }}>
+            <h4>EDIT DATA VIDEO</h4>
+            <input value={editData.title} onChange={(e) => setEditData({...editData, title: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', background: '#000', color: '#fff', border: '1px solid #333' }} />
+            <input value={editData.thumbnail} onChange={(e) => setEditData({...editData, thumbnail: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '10px', background: '#000', color: '#fff', border: '1px solid #333' }} />
+            <input value={editData.url} onChange={(e) => setEditData({...editData, url: e.target.value})} style={{ width: '100%', padding: '10px', marginBottom: '20px', background: '#000', color: '#fff', border: '1px solid #333' }} />
+            <button onClick={handleUpdateVideo} style={{ width: '100%', padding: '10px', background: '#25D366', color: '#fff', border: 'none', borderRadius: '5px', marginBottom: '10px' }}>SIMPAN</button>
+            <button onClick={() => setEditData(null)} style={{ width: '100%', padding: '10px', background: '#444', color: '#fff', border: 'none', borderRadius: '5px' }}>BATAL</button>
           </div>
         </div>
       )}

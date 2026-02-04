@@ -36,31 +36,22 @@ export default function Home() {
 
       <div style={{ paddingTop: '90px', paddingLeft: '5%', paddingRight: '5%', paddingBottom: '40px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '20px' }}>
-          {filteredVideos.map((vid) => {
-            // JURUS FIX TOTAL: Pastikan link punya protokol https
-            let thumb = vid.thumbnail ? vid.thumbnail.trim() : "";
-            if (thumb.startsWith("//")) thumb = "https:" + thumb;
-            if (thumb && !thumb.startsWith("http")) thumb = "https://" + thumb;
-
-            // Gunakan Proxy wsrv.nl yang lebih fleksibel
-            const finalUrl = thumb ? `https://wsrv.nl/?url=${encodeURIComponent(thumb)}&default=https://via.placeholder.com/300x450?text=No+Image` : "https://via.placeholder.com/300x450?text=No+Image";
-
-            return (
-              <a href={`/watch/${vid.id}`} key={vid.id} style={{ textDecoration: 'none', color: '#fff' }}>
-                <div style={{ position: 'relative', paddingTop: '150%', borderRadius: '10px', overflow: 'hidden', background: '#1a1a1a', border: '1px solid #333' }}>
-                  <img 
-                    src={finalUrl} 
-                    alt={vid.title}
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={(e) => { e.target.src = "https://via.placeholder.com/300x450?text=Error+Link"; }}
-                  />
-                </div>
-                <h3 style={{ fontSize: '0.75rem', marginTop: '10px', textAlign: 'center', fontWeight: '400', height: '2.4em', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                  {vid.title}
-                </h3>
-              </a>
-            )
-          })}
+          {filteredVideos.map((vid) => (
+            <a href={`/watch/${vid.id}`} key={vid.id} style={{ textDecoration: 'none', color: '#fff' }}>
+              <div style={{ position: 'relative', paddingTop: '150%', borderRadius: '10px', overflow: 'hidden', background: '#1a1a1a', border: '1px solid #333' }}>
+                <img 
+                  src={vid.thumbnail} 
+                  alt={vid.title}
+                  referrerPolicy="no-referrer" // JURUS PAMUNGKAS DI SINI
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => { e.target.src = "https://via.placeholder.com/300x450?text=Reload+Page"; }}
+                />
+              </div>
+              <h3 style={{ fontSize: '0.75rem', marginTop: '10px', textAlign: 'center', fontWeight: '400', height: '2.4em', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                {vid.title}
+              </h3>
+            </a>
+          ))}
         </div>
       </div>
     </div>

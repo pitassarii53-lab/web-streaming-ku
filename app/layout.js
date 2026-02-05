@@ -4,7 +4,7 @@ import Script from "next/script";
 const TELEGRAM_LINK = "https://t.me/+d9TcoaiEqwQ3M2U1";
 
 export const metadata = {
-  title: "STREAMINGKU - Nonton Film Gratis",
+  title: "STREAMINGKU - Nonton Film 18+ Gratis",
   description: "Streaming film terbaru tanpa iklan banner",
 };
 
